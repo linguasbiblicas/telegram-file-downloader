@@ -1,34 +1,38 @@
-# Telegram File Downloader
+# 📁 Telegram File Downloader — Escola de Línguas Bíblicas
 
-Um script em Python para baixar arquivos de grupos e canais do Telegram de forma simples e interativa.
+Este é um utilitário simples e seguro em Python para baixar automaticamente arquivos de **canais ou grupos do Telegram** diretamente para o seu computador.
 
-## Recursos
+Ideal para professores, pesquisadores ou estudantes que precisam organizar arquivos compartilhados em grupos de estudo.
 
-- Interface amigável no terminal
-- Configurações salvas para reuso
-- Barra de progresso com porcentagem
-- Suporte a múltiplos downloads simultâneos
-- Opção de pular arquivos em tempo real
-- Evita baixar arquivos duplicados
+---
 
-## Requisitos
+## ✨ Funcionalidades
 
-- Python 3.7+
-- Biblioteca [Telethon](https://github.com/LonamiWebs/Telethon)
-- tqdm
+- 🔍 Busca automática por arquivos em grupos e canais do Telegram  
+- 📊 Barra de progresso amigável com porcentagem  
+- 🔁 Evita downloads duplicados  
+- ⏭️ Permite pular arquivos em tempo real  
+- ⚡ Armazena cache local para maior velocidade  
+- ✅ Totalmente gratuito e de código aberto  
 
-## Instalação
+---
+
+## 💻 Requisitos
+
+- Python 3.7 ou superior  
+- Conta no Telegram  
+- Chaves de autenticação da API (`api_id` e `api_hash`)
+
+---
+
+## 🧭 Instalação (Windows, Mac ou Linux)
+
+### 1. Baixe o Python
+
+- [Windows](https://www.python.org/downloads/windows/)
+- [Mac](https://www.python.org/downloads/macos/)
+- **Linux (Ubuntu):**
 
 ```bash
-pip install -r requirements.txt
-```
-
-## Uso
-
-```bash
-python3 filesdownload.py
-```
-
-## Licença
-
-MIT
+sudo apt update
+sudo apt install python3 python3-pip
