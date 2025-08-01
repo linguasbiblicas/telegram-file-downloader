@@ -36,16 +36,19 @@ Ideal para professores, pesquisadores ou estudantes que precisam organizar arqui
 ```bash
 sudo apt update
 sudo apt install python3 python3-pip
-```bash
+```
 
 > Dica: verifique se o Python está instalado com:
+
 ```bash
 python --version
-```bash
+```
+
 ou
+
 ```bash
 python3 --version
-```bash
+```
 
 ---
 
@@ -56,7 +59,7 @@ python3 --version
 ```bash
 git clone https://github.com/linguasbiblicas/telegram-file-downloader.git
 cd telegram-file-downloader
-```bash
+```
 
 #### Ou baixe como ZIP:
 
@@ -70,7 +73,7 @@ Depois de extrair o arquivo, abra o terminal na pasta extraída.
 
 ```bash
 pip install -r requirements.txt
-```bash
+```
 
 ---
 
@@ -90,7 +93,7 @@ Dentro da pasta do projeto, execute o script:
 
 ```bash
 python main.py
-```bash
+```
 
 Depois disso, siga os passos no terminal:
 
