@@ -1,4 +1,4 @@
-# 📁 Telegram File Downloader — Escola de Línguas Bíblicas
+# 📁 Telegram File Downloader
 
 Este é um utilitário simples e seguro em Python para baixar automaticamente arquivos de **canais ou grupos do Telegram** diretamente para o seu computador.
 
