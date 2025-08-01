@@ -35,8 +35,9 @@ def salvar_config(config):
         json.dump(config, f, indent=4)
 
 def entrada_config(campo, texto, obrigatorio=False, padrao=None):
+    aviso = " (pressione Enter para manter o valor anterior, se houver)"
     while True:
-        valor = input(f"{texto} [{config.get(campo, padrao) or 'não definido'}]: ").strip()
+        valor = input(f"{texto}{aviso} [{config.get(campo, padrao) or 'não definido'}]: ").strip()
         if valor:
             config[campo] = valor
             return valor
@@ -145,7 +146,8 @@ async def main():
     os.makedirs(downloads_dir, exist_ok=True)
     os.makedirs(destino_textos, exist_ok=True)
 
-    valor = input(f"Downloads simultâneos? (0 = ilimitado, Enter = {config.get('concurrent_downloads', 1)}): ").strip()
+    aviso = " (pressione Enter para manter o valor anterior, se houver)"
+    valor = input(f"Downloads simultâneos? (0 = ilimitado){aviso} [{config.get('concurrent_downloads', 1)}]: ").strip()
     if valor.isdigit():
         concurrent_downloads = int(valor)
         config['concurrent_downloads'] = concurrent_downloads
