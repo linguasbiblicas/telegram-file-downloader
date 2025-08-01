@@ -35,9 +35,8 @@ def salvar_config(config):
         json.dump(config, f, indent=4)
 
 def entrada_config(campo, texto, obrigatorio=False, padrao=None):
-    aviso = " (pressione Enter para manter o valor anterior, se houver)"
     while True:
-        valor = input(f"{texto}{aviso} [{config.get(campo, padrao) or 'não definido'}]: ").strip()
+        valor = input(f"{texto} [{config.get(campo, padrao) or 'não definido'}]: ").strip()
         if valor:
             config[campo] = valor
             return valor
@@ -146,8 +145,7 @@ async def main():
     os.makedirs(downloads_dir, exist_ok=True)
     os.makedirs(destino_textos, exist_ok=True)
 
-    aviso = " (pressione Enter para manter o valor anterior, se houver)"
-    valor = input(f"Downloads simultâneos? (0 = ilimitado){aviso} [{config.get('concurrent_downloads', 1)}]: ").strip()
+    valor = input(f"Downloads simultâneos? (0 = ilimitado, Enter = {config.get('concurrent_downloads', 1)}): ").strip()
     if valor.isdigit():
         concurrent_downloads = int(valor)
         config['concurrent_downloads'] = concurrent_downloads
@@ -180,7 +178,18 @@ async def main():
         arquivos = await levantar_arquivos(client, group_username)
 
     while True:
-        termos = input("\n🔎 Digite termos para busca (ou Enter p/ tudo, ou 'sair'): ").strip()
+        try:
+            termos = input("\n🔎 Digite termos para busca (ou Enter p/ tudo, ou 'sair'):\n"
+                           "➡️  Use operadores booleanos (AND, OR, aspas para frases)\n"
+                           "Exemplos:\n"
+                           "  📌 isaiah AND scroll\n"
+                           "  📌 \"dead sea\" OR qumran\n"
+                           "  📌 genesis\n"
+                           "➤ Termos: ").strip()
+        except KeyboardInterrupt:
+            print("\n⛔ Operação interrompida. Retornando à busca...")
+            continue
+
         if termos.lower() == 'sair':
             print("👋 Encerrando busca.")
             break
@@ -196,7 +205,7 @@ async def main():
                     tarefas = arquivos_filtrados[i:i+concurrent_downloads]
                     await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir, destino_textos) for a in tarefas))
         except KeyboardInterrupt:
-            print("\n⛔ Downloads interrompidos.")
+            print("\n⛔ Downloads interrompidos. Retornando à busca...")
 
     print("\n✅ Fim do programa.")
 
