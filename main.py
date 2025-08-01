@@ -80,6 +80,9 @@ async def levantar_arquivos(client, group_username):
 
 def aplicar_ocr(file_path, destino_textos):
     try:
+        # Criar diretório de saída se não existir
+        os.makedirs(destino_textos, exist_ok=True)
+
         base = os.path.splitext(os.path.basename(file_path))[0]
         pdf_ocr_path = os.path.join(destino_textos, base + "_ocr.pdf")
         txt_path = os.path.join(destino_textos, base + ".txt")
@@ -90,8 +93,9 @@ def aplicar_ocr(file_path, destino_textos):
         print(f"📑 OCR salvo em: {pdf_ocr_path}")
         print(f"📄 Texto extraído salvo em: {txt_path}")
 
-    except Exception as e:
+    except subprocess.CalledProcessError as e:
         print(f"❌ Erro ao aplicar OCR: {e}")
+        print("ℹ️  Dica: o PDF pode já conter texto. Tente usar '--force-ocr' ou '--redo-ocr' se necessário.")
 
 async def baixar_arquivo(client, arq, group_username, downloads_dir, destino_textos):
     global skip_download
@@ -180,12 +184,12 @@ async def main():
     while True:
         try:
             termos = input("\n🔎 Digite termos para busca (ou Enter p/ tudo, ou 'sair'):\n"
-                               "➡️  Use operadores booleanos (AND, OR, aspas para frases)\n"
-                               "Exemplos:\n"
-                               "  📌 isaiah AND scroll\n"
-                               "  📌 \"dead sea\" OR qumran\n"
-                               "  📌 genesis\n"
-                               "➤ Termos (pressione Enter para manter busca anterior ou sair): ").strip()
+                           "➡️  Use operadores booleanos (AND, OR, aspas para frases)\n"
+                           "Exemplos:\n"
+                           "  📌 isaiah AND scroll\n"
+                           "  📌 \"dead sea\" OR qumran\n"
+                           "  📌 genesis\n"
+                           "➤ Termos (pressione Enter para manter busca anterior ou sair): ").strip()
         except KeyboardInterrupt:
             print("\n⛔ Operação interrompida. Retornando à busca...")
             continue
