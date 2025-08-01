@@ -70,11 +70,14 @@ Depois de extrair o arquivo, abra o terminal na pasta extraída.
 ---
 
 ### 3.3 Instale os pacotes necessários
-
+Acione este comando:
 ```bash
 pip install -r requirements.txt
 ```
-
+Ou este:
+```bash
+python3 -m pip install -r requirements.txt
+```
 ---
 
 ## 4. Como obter seu API ID e API HASH
