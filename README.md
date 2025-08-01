@@ -113,8 +113,8 @@ Depois disso, siga os passos no terminal:
 
 ## 7. Autor
 
-Desenvolvido por [Erike Lourenço](https://linguasbiblicas.com.br)  
-📚 Escola de Línguas Bíblicas  
+Desenvolvido por Erike Lourenço [contato@linguasbiblicas.com.br](mailto:contato@linguasbiblicas.com.br)  
+📚 Escola de Línguas Bíblicas: [www.linguasbiblicas.com.br](https://linguasbiblicas.com.br)   
 📬 Contato: [wa.me/linguasbiblicas](https://wa.me/linguasbiblicas)
 
 ---
