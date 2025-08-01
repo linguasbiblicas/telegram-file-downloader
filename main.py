@@ -84,10 +84,7 @@ def aplicar_ocr(file_path, destino_textos):
         pdf_ocr_path = os.path.join(destino_textos, base + "_ocr.pdf")
         txt_path = os.path.join(destino_textos, base + ".txt")
 
-        # OCR com ocrmypdf
         subprocess.run(["ocrmypdf", file_path, pdf_ocr_path], check=True)
-
-        # Extração de texto com pdftotext
         subprocess.run(["pdftotext", pdf_ocr_path, txt_path], check=True)
 
         print(f"📑 OCR salvo em: {pdf_ocr_path}")
@@ -120,7 +117,6 @@ async def baixar_arquivo(client, arq, group_username, downloads_dir, destino_tex
 
             await msg.download_media(file_path, progress_callback=progresso)
 
-        # Aplicar OCR se for PDF
         if file_path.lower().endswith(".pdf"):
             aplicar_ocr(file_path, destino_textos)
 
@@ -132,12 +128,8 @@ async def main():
     config = carregar_config()
 
     print("🛠️  Cadastro do aplicativo no Telegram")
-    pronto = input("Digite S (ou Enter) para sim ou N para sair: ").strip().lower()
-    if pronto not in ['s', '']:
-        print("❌ Você precisa concluir o cadastro antes de continuar.")
-        return
-
-    print("\n✅ Cadastro confirmado.")
+    print("🔗 Verifique se você já criou o app em: https://my.telegram.org/apps")
+    print("✅ Cadastro confirmado. Prosseguindo automaticamente...\n")
 
     api_id = entrada_config("api_id", "Digite o API ID", obrigatorio=True)
     api_hash = entrada_config("api_hash", "Digite o API HASH", obrigatorio=True)
@@ -176,8 +168,8 @@ async def main():
 
     print(f"\n✅ Conectado. Acessando grupo/canal: {group_username}\n")
 
-    usar_cache = input("📦 Usar levantamento anterior (S ou Enter), ou N para novo? ").strip().lower()
-    if usar_cache in ['', 's'] and os.path.exists(CACHE_FILE):
+    usar_cache = os.path.exists(CACHE_FILE)
+    if usar_cache:
         print("🗂️  Usando levantamento anterior.")
         with open(CACHE_FILE, 'r') as f:
             arquivos = json.load(f)
