@@ -1,109 +1,4 @@
-
-import os
-import json
-import asyncio
-import threading
-from telethon.sync import TelegramClient
-from telethon.errors import SessionPasswordNeededError
-from getpass import getpass
-from datetime import datetime
-import re
-from tqdm import tqdm
-
-CONFIG_FILE = 'config.json'
-CACHE_FILE = 'file_cache.json'
-skip_download = False
-concurrent_downloads = 1  # padrão
-
-def monitorar_pular_download():
-    global skip_download
-    print("\n⏭️  Pressione 'p' e Enter a qualquer momento para pular o download atual.")
-    while True:
-        tecla = input()
-        if tecla.strip().lower() == 'p':
-            skip_download = True
-
-def carregar_config():
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r') as f:
-            return json.load(f)
-    return {}
-
-def salvar_config(config):
-    with open(CONFIG_FILE, 'w') as f:
-        json.dump(config, f, indent=4)
-
-def entrada_config(campo, texto, obrigatorio=False, padrao=None):
-    while True:
-        valor = input(f"{texto} [{config.get(campo, padrao) or 'não definido'}]: ").strip()
-        if valor:
-            config[campo] = valor
-            return valor
-        elif config.get(campo):
-            return config[campo]
-        elif padrao is not None:
-            config[campo] = padrao
-            return padrao
-        elif not obrigatorio:
-            return ''
-        else:
-            print("❗ Campo obrigatório. Tente novamente.")
-
-def combinar_nome(nome_arquivo, termos):
-    if not termos:
-        return True
-    termos = termos.lower().split()
-    return all(t in nome_arquivo.lower() for t in termos)
-
-async def levantar_arquivos(client, group_username):
-    arquivos = []
-    count = 0
-    inicio = datetime.now()
-    try:
-        async for msg in client.iter_messages(group_username):
-            if msg.file and msg.file.name:
-                arquivos.append({'id': msg.id, 'name': msg.file.name})
-            count += 1
-            if count % 100 == 0:
-                duracao = datetime.now() - inicio
-                print(f"🔄 Lidas {count} mensagens... Tempo: {str(duracao).split('.')[0]}")
-    except KeyboardInterrupt:
-        print("\n⛔ Busca interrompida pelo usuário.")
-        return []
-    print(f"\n📦 Total de arquivos listados: {len(arquivos)}")
-
-    with open(CACHE_FILE, 'w') as f:
-        json.dump(arquivos, f, indent=2)
-        print(f"💾 Levantamento salvo em cache: {CACHE_FILE}")
-    return arquivos
-
-async def baixar_arquivo(client, arq, group_username, downloads_dir):
-    global skip_download
-    try:
-        if skip_download:
-            print(f"⏭️  {arq['name']} foi pulado.")
-            skip_download = False
-            return
-
-        file_path = os.path.join(downloads_dir, arq['name'])
-
-        if os.path.exists(file_path):
-            print(f"✅ {arq['name']} já existe. Pulando download.")
-            return
-
-        msg = await client.get_messages(group_username, ids=arq['id'])
-        print(f"⬇️  Baixando: {arq['name']}")
-
-        # Barra de progresso com tqdm
-        with tqdm(total=msg.file.size or 0, unit='B', unit_scale=True, desc=arq['name'][:40]) as bar:
-            def progresso(bytes_enviados, tamanho_total):
-                bar.total = tamanho_total
-                bar.update(bytes_enviados - bar.n)
-
-            await msg.download_media(file_path, progress_callback=progresso)
-
-    except Exception as e:
-        print(f"❌ Erro ao baixar {arq['name']}: {e}")
+# [...] todas as importações, funções e variáveis continuam as mesmas até aqui
 
 async def main():
     global config, concurrent_downloads
@@ -169,21 +64,29 @@ async def main():
         print("🔄 Atualizando levantamento de arquivos...")
         arquivos = await levantar_arquivos(client, group_username)
 
-    termos = input("\n🔎 Digite termos para busca (AND, OR, *, Enter p/ tudo): ").strip()
-    arquivos_filtrados = [a for a in arquivos if combinar_nome(a['name'], termos)]
-    print(f"\n🔍 Arquivos encontrados com filtro: {len(arquivos_filtrados)}")
+    # 🔁 Loop de busca contínua
+    while True:
+        termos = input("\n🔎 Digite termos para busca (AND, OR, *, Enter p/ tudo, Q p/ sair): ").strip()
+        if termos.lower() == 'q':
+            print("👋 Encerrando busca.")
+            break
 
-    try:
-        if concurrent_downloads == 0:
-            await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir) for a in arquivos_filtrados))
-        else:
-            for i in range(0, len(arquivos_filtrados), concurrent_downloads):
-                tarefas = arquivos_filtrados[i:i+concurrent_downloads]
-                await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir) for a in tarefas))
-    except KeyboardInterrupt:
-        print("\n⛔ Downloads interrompidos pelo usuário.")
+        arquivos_filtrados = [a for a in arquivos if combinar_nome(a['name'], termos)]
+        print(f"\n🔍 Arquivos encontrados com filtro: {len(arquivos_filtrados)}")
 
-    print("\n✅ Downloads concluídos.")
+        try:
+            if concurrent_downloads == 0:
+                await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir) for a in arquivos_filtrados))
+            else:
+                for i in range(0, len(arquivos_filtrados), concurrent_downloads):
+                    tarefas = arquivos_filtrados[i:i+concurrent_downloads]
+                    await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir) for a in tarefas))
+        except KeyboardInterrupt:
+            print("\n⛔ Downloads interrompidos pelo usuário.")
+
+        print("\n🔁 Busca concluída. Você pode realizar uma nova busca ou digitar 'Q' para sair.")
+
+    print("\n✅ Todas as buscas e downloads foram concluídos.")
 
 if __name__ == '__main__':
     try:
