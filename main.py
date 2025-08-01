@@ -36,7 +36,7 @@ def salvar_config(config):
 
 def entrada_config(campo, texto, obrigatorio=False, padrao=None):
     while True:
-        valor = input(f"{texto} [{config.get(campo, padrao) or 'não definido'}] (pressione Enter para manter o valor atual): ").strip()
+        valor = input(f"{texto} [{config.get(campo, padrao) or 'não definido'}]: ").strip()
         if valor:
             config[campo] = valor
             return valor
@@ -69,7 +69,7 @@ async def levantar_arquivos(client, group_username):
                 duracao = datetime.now() - inicio
                 print(f"🔄 Lidas {count} mensagens... Tempo: {str(duracao).split('.')[0]}")
     except KeyboardInterrupt:
-        print("\n⛔ Busca interrompida pelo usuário. Retornando ao menu de busca...")
+        print("\n⛔ Busca interrompida pelo usuário.")
         return []
     print(f"\n📦 Total de arquivos listados: {len(arquivos)}")
 
@@ -160,10 +160,10 @@ async def main():
     if not await client.is_user_authorized():
         try:
             await client.send_code_request(phone)
-            code = input('Código recebido (pressione Enter se não quiser alterar): ')
+            code = input('Código recebido: ')
             await client.sign_in(phone, code)
         except SessionPasswordNeededError:
-            pw = getpass('Senha em duas etapas (pressione Enter se não quiser alterar): ')
+            pw = getpass('Senha em duas etapas: ')
             await client.sign_in(password=pw)
 
     print(f"\n✅ Conectado. Acessando grupo/canal: {group_username}\n")
@@ -180,12 +180,12 @@ async def main():
     while True:
         try:
             termos = input("\n🔎 Digite termos para busca (ou Enter p/ tudo, ou 'sair'):\n"
-                               "➡️  Use operadores booleanos (AND, OR, aspas para frases)\n"
-                               "Exemplos:\n"
-                               "  📌 isaiah AND scroll\n"
-                               "  📌 \"dead sea\" OR qumran\n"
-                               "  📌 genesis\n"
-                               "➤ Termos (pressione Enter para manter busca anterior ou sair): ").strip()
+                           "➡️  Use operadores booleanos (AND, OR, aspas para frases)\n"
+                           "Exemplos:\n"
+                           "  📌 isaiah AND scroll\n"
+                           "  📌 \"dead sea\" OR qumran\n"
+                           "  📌 genesis\n"
+                           "➤ Termos: ").strip()
         except KeyboardInterrupt:
             print("\n⛔ Operação interrompida. Retornando à busca...")
             continue
@@ -215,5 +215,4 @@ if __name__ == '__main__':
         thread_pular.start()
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n⛔ Programa finalizado pelo usuário. Retornando ao menu de busca...")
-        asyncio.run(main())
+        print("\n⛔ Programa finalizado.")
