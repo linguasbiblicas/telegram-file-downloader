@@ -4,12 +4,12 @@ import json
 import time
 import asyncio
 import threading
+import subprocess
 from telethon.sync import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from getpass import getpass
 from datetime import datetime
 from tqdm import tqdm
-import subprocess
 
 CONFIG_FILE = 'config.json'
 CACHE_FILE = 'file_cache.json'
@@ -78,14 +78,14 @@ async def levantar_arquivos(client, group_username):
         print(f"💾 Levantamento salvo em cache: {CACHE_FILE}")
     return arquivos
 
-def aplicar_ocr(file_path, destino_textos):
+def aplicar_ocr(file_path, ocr_dir, txt_dir):
     try:
-        # Criar diretório de saída se não existir
-        os.makedirs(destino_textos, exist_ok=True)
+        os.makedirs(ocr_dir, exist_ok=True)
+        os.makedirs(txt_dir, exist_ok=True)
 
         base = os.path.splitext(os.path.basename(file_path))[0]
-        pdf_ocr_path = os.path.join(destino_textos, base + "_ocr.pdf")
-        txt_path = os.path.join(destino_textos, base + ".txt")
+        pdf_ocr_path = os.path.join(ocr_dir, base + "_ocr.pdf")
+        txt_path = os.path.join(txt_dir, base + ".txt")
 
         subprocess.run(["ocrmypdf", file_path, pdf_ocr_path], check=True)
         subprocess.run(["pdftotext", pdf_ocr_path, txt_path], check=True)
@@ -97,7 +97,7 @@ def aplicar_ocr(file_path, destino_textos):
         print(f"❌ Erro ao aplicar OCR: {e}")
         print("ℹ️  Dica: o PDF pode já conter texto. Tente usar '--force-ocr' ou '--redo-ocr' se necessário.")
 
-async def baixar_arquivo(client, arq, group_username, downloads_dir, destino_textos):
+async def baixar_arquivo(client, arq, group_username, downloads_dir, ocr_dir, txt_dir):
     global skip_download
     try:
         if skip_download:
@@ -122,7 +122,7 @@ async def baixar_arquivo(client, arq, group_username, downloads_dir, destino_tex
             await msg.download_media(file_path, progress_callback=progresso)
 
         if file_path.lower().endswith(".pdf"):
-            aplicar_ocr(file_path, destino_textos)
+            aplicar_ocr(file_path, ocr_dir, txt_dir)
 
     except Exception as e:
         print(f"❌ Erro ao baixar {arq['name']}: {e}")
@@ -145,9 +145,20 @@ async def main():
         "Diretório de destino dos downloads",
         padrao=os.path.join(os.getcwd(), "downloads")
     )
-    destino_textos = os.path.join(downloads_dir, "textospdf")
+    ocr_dir = entrada_config(
+        "ocr_dir",
+        "Diretório para salvar arquivos OCR (PDFs processados)",
+        padrao=os.path.join(os.getcwd(), "downloads", "pdfs_ocr")
+    )
+    txt_dir = entrada_config(
+        "txt_dir",
+        "Diretório para salvar arquivos TXT extraídos do PDF",
+        padrao=os.path.join(os.getcwd(), "downloads", "textos_txt")
+    )
+
     os.makedirs(downloads_dir, exist_ok=True)
-    os.makedirs(destino_textos, exist_ok=True)
+    os.makedirs(ocr_dir, exist_ok=True)
+    os.makedirs(txt_dir, exist_ok=True)
 
     valor = input(f"Downloads simultâneos? (0 = ilimitado, Enter = {config.get('concurrent_downloads', 1)}): ").strip()
     if valor.isdigit():
@@ -203,11 +214,11 @@ async def main():
 
         try:
             if concurrent_downloads == 0:
-                await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir, destino_textos) for a in arquivos_filtrados))
+                await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir, ocr_dir, txt_dir) for a in arquivos_filtrados))
             else:
                 for i in range(0, len(arquivos_filtrados), concurrent_downloads):
                     tarefas = arquivos_filtrados[i:i+concurrent_downloads]
-                    await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir, destino_textos) for a in tarefas))
+                    await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir, ocr_dir, txt_dir) for a in tarefas))
         except KeyboardInterrupt:
             print("\n⛔ Downloads interrompidos. Retornando à busca...")
 
