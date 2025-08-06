@@ -4,12 +4,12 @@ import json
 import time
 import asyncio
 import threading
-import subprocess
 from telethon.sync import TelegramClient
 from telethon.errors import SessionPasswordNeededError
 from getpass import getpass
 from datetime import datetime
 from tqdm import tqdm
+import subprocess
 
 CONFIG_FILE = 'config.json'
 CACHE_FILE = 'file_cache.json'
@@ -78,26 +78,27 @@ async def levantar_arquivos(client, group_username):
         print(f"💾 Levantamento salvo em cache: {CACHE_FILE}")
     return arquivos
 
-def aplicar_ocr(file_path, ocr_dir, txt_dir):
+def aplicar_ocr(file_path, destino_ocr, destino_txt, processar_ocr=True, processar_txt=True):
     try:
-        os.makedirs(ocr_dir, exist_ok=True)
-        os.makedirs(txt_dir, exist_ok=True)
-
         base = os.path.splitext(os.path.basename(file_path))[0]
-        pdf_ocr_path = os.path.join(ocr_dir, base + "_ocr.pdf")
-        txt_path = os.path.join(txt_dir, base + ".txt")
+        pdf_ocr_path = os.path.join(destino_ocr, base + "_ocr.pdf")
+        txt_path = os.path.join(destino_txt, base + ".txt")
 
-        subprocess.run(["ocrmypdf", file_path, pdf_ocr_path], check=True)
-        subprocess.run(["pdftotext", pdf_ocr_path, txt_path], check=True)
+        if processar_ocr:
+            os.makedirs(destino_ocr, exist_ok=True)
+            subprocess.run(["ocrmypdf", file_path, pdf_ocr_path], check=True)
+            print(f"📑 OCR salvo em: {pdf_ocr_path}")
 
-        print(f"📑 OCR salvo em: {pdf_ocr_path}")
-        print(f"📄 Texto extraído salvo em: {txt_path}")
+        if processar_txt:
+            os.makedirs(destino_txt, exist_ok=True)
+            subprocess.run(["pdftotext", pdf_ocr_path if processar_ocr else file_path, txt_path], check=True)
+            print(f"📄 Texto extraído salvo em: {txt_path}")
 
     except subprocess.CalledProcessError as e:
-        print(f"❌ Erro ao aplicar OCR: {e}")
-        print("ℹ️  Dica: o PDF pode já conter texto. Tente usar '--force-ocr' ou '--redo-ocr' se necessário.")
+        print(f"❌ Erro ao aplicar OCR/TXT: {e}")
+        print("ℹ️  Dica: o PDF pode já conter texto. Tente usar '--force-ocr' se necessário.")
 
-async def baixar_arquivo(client, arq, group_username, downloads_dir, ocr_dir, txt_dir):
+async def baixar_arquivo(client, arq, group_username, downloads_dir, destino_ocr, destino_txt, processar_ocr, processar_txt):
     global skip_download
     try:
         if skip_download:
@@ -122,7 +123,7 @@ async def baixar_arquivo(client, arq, group_username, downloads_dir, ocr_dir, tx
             await msg.download_media(file_path, progress_callback=progresso)
 
         if file_path.lower().endswith(".pdf"):
-            aplicar_ocr(file_path, ocr_dir, txt_dir)
+            aplicar_ocr(file_path, destino_ocr, destino_txt, processar_ocr, processar_txt)
 
     except Exception as e:
         print(f"❌ Erro ao baixar {arq['name']}: {e}")
@@ -140,25 +141,13 @@ async def main():
     phone = entrada_config("phone", "Digite seu telefone (com DDI)", obrigatorio=True)
     group_username = entrada_config("group_username", "Nome do grupo ou canal (sem @)", obrigatorio=True)
 
-    downloads_dir = entrada_config(
-        "downloads_dir",
-        "Diretório de destino dos downloads",
-        padrao=os.path.join(os.getcwd(), "downloads")
-    )
-    ocr_dir = entrada_config(
-        "ocr_dir",
-        "Diretório para salvar arquivos OCR (PDFs processados)",
-        padrao=os.path.join(os.getcwd(), "downloads", "pdfs_ocr")
-    )
-    txt_dir = entrada_config(
-        "txt_dir",
-        "Diretório para salvar arquivos TXT extraídos do PDF",
-        padrao=os.path.join(os.getcwd(), "downloads", "textos_txt")
-    )
+    downloads_dir = entrada_config("downloads_dir", "Diretório de destino dos downloads", padrao=os.path.join(os.getcwd(), "downloads"))
+    destino_ocr = entrada_config("destino_ocr", "Pasta para armazenar PDFs com OCR", padrao=os.path.join(downloads_dir, "ocrpdf"))
+    destino_txt = entrada_config("destino_txt", "Pasta para armazenar arquivos TXT extraídos", padrao=os.path.join(downloads_dir, "textospdf"))
 
     os.makedirs(downloads_dir, exist_ok=True)
-    os.makedirs(ocr_dir, exist_ok=True)
-    os.makedirs(txt_dir, exist_ok=True)
+    os.makedirs(destino_ocr, exist_ok=True)
+    os.makedirs(destino_txt, exist_ok=True)
 
     valor = input(f"Downloads simultâneos? (0 = ilimitado, Enter = {config.get('concurrent_downloads', 1)}): ").strip()
     if valor.isdigit():
@@ -166,6 +155,11 @@ async def main():
         config['concurrent_downloads'] = concurrent_downloads
     elif valor == '':
         concurrent_downloads = int(config.get('concurrent_downloads', 1))
+
+    processar_ocr = input("Deseja aplicar OCR aos PDFs? (S/N) [S]: ").strip().lower() != 'n'
+    processar_txt = input("Deseja extrair texto dos PDFs? (S/N) [S]: ").strip().lower() != 'n'
+    config['processar_ocr'] = processar_ocr
+    config['processar_txt'] = processar_txt
     salvar_config(config)
 
     print("🔐 Conectando ao Telegram...\n")
@@ -213,12 +207,15 @@ async def main():
         print(f"\n🔍 Arquivos encontrados com filtro: {len(arquivos_filtrados)}")
 
         try:
+            tarefas = [
+                baixar_arquivo(client, a, group_username, downloads_dir, destino_ocr, destino_txt, processar_ocr, processar_txt)
+                for a in arquivos_filtrados
+            ]
             if concurrent_downloads == 0:
-                await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir, ocr_dir, txt_dir) for a in arquivos_filtrados))
+                await asyncio.gather(*tarefas)
             else:
-                for i in range(0, len(arquivos_filtrados), concurrent_downloads):
-                    tarefas = arquivos_filtrados[i:i+concurrent_downloads]
-                    await asyncio.gather(*(baixar_arquivo(client, a, group_username, downloads_dir, ocr_dir, txt_dir) for a in tarefas))
+                for i in range(0, len(tarefas), concurrent_downloads):
+                    await asyncio.gather(*tarefas[i:i+concurrent_downloads])
         except KeyboardInterrupt:
             print("\n⛔ Downloads interrompidos. Retornando à busca...")
 
